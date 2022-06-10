@@ -1,0 +1,54 @@
+---
+title: 'Manipulação de tabelas'
+output: html_notebook
+---
+
+```{r}
+# 1)Com o pacote rbcb, baixe as cotações do PIB, as últimas 60.
+
+library(rbcb)
+library(dplyr)
+library(tidyr)
+
+PIB=rbcb::get_series(c(div_liq=4503), last=60)
+PIB
+
+```
+```{r}
+# 2)baixe as cotações do IPCA, os últimos 60 meses. (pode ser os códigos 4382 e 433, se quiserem)
+
+IPCA=rbcb::get_series(c(IPCA=433), last=60)
+
+```
+```{r}
+# 3)Usando o left_join, una as cotações numa única tabela pela data (caso tenha algum valor NA, pode dar um %>% na.omit);
+
+tabela_PIB=PIB
+tabela_IPCA=IPCA
+juncao_1=left_join(tabela_PIB, tabela_IPCA, by='date')
+juncao_1
+
+```
+```{r}
+# 4)Selecione somente as sequencias do PIB e IPCA;
+
+selecao=juncao_1 %>% select(div_liq, IPCA)
+selecao
+
+```
+```{r}
+# 5)use o gather e monte a tabela no formato long;
+
+selecao %>% gather(Medida, Valor)
+
+```
+```{r}
+# 6)use o group_by e summarize e determine em cada medida a média, mediana, desvio padrão e o número de observações;
+
+selecao %>% 
+  gather(Medida_PIB_e_IPCA, Valor) %>%
+  group_by(Medida_PIB_e_IPCA) %>%
+  summarise(Media=mean(Valor), Desvio_Padrao=sd(Valor), Mediana=median(Valor), Observações=n())
+  
+```
+
