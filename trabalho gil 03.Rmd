@@ -1,0 +1,43 @@
+---
+title: "trabalho gil 03"
+output: html_notebook
+---
+
+```{r}
+library(sidrar)
+library(tidyverse)
+IPCA = get_sidra ( api =  '/t/1737/n1/all/v/2266/p/all/d/v2266%2013')
+api
+
+```
+```{r}
+library(dplyr)
+ds2 = IPCA
+ds2 %>%
+  mutate(data = parse_date(`Mês (Código)`, format ="%Y%m"))
+
+
+```
+```{r}
+ds2 %>% rename(índice = Valor)
+```
+
+
+```{r}
+ds2<-ds2 %>%
+  mutate(data = parse_date(`Mês (Código)`, format ="%Y%m"))
+
+ds2 %>% select(índice = Valor,data) %>% 
+  filter(índice >=1.598410e+03, data >= "2000-01-01")
+
+ds3 = ds2 %>% select(índice = Valor,data) %>% 
+  filter(índice >=1.598410e+03, data >= "2000-01-01")
+
+
+```
+```{r}
+ggplot(data = ds3, aes(x = índice, y=data))+ 
+  geom_line() 
+```
+
+
