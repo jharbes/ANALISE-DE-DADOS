@@ -1,0 +1,72 @@
+---
+title: "jharbes-dashboard-dinamico"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(tidyverse)
+library(shiny)
+
+
+dados = diamonds
+```
+
+## column{.sidebar}
+```{r}
+selectInput(
+  inputId = "coluna",
+  label = "Escolha a coluna desejada",
+  choices = c ("price"),
+  selected = "price"
+)
+
+```
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### boxplot
+
+```{r}
+renderPlot(
+  dados%>%
+    ggplot() +
+    aes(y = !!sym(input$coluna)) + aes(fill = cut) +
+    geom_boxplot()
+)
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### histograma
+
+```{r}
+renderPlot(
+  dados%>%
+    ggplot() +
+    aes(x = !!sym(input$coluna)) + aes(fill = cut) +
+    geom_histogram()
+)
+```
+
+### tabela
+
+```{r}
+renderTable(
+  dados %>%
+  group_by(cut)%>%
+  summarise(
+    media = mean(!!sym(input$coluna)),
+    mediana = median(!!sym(input$coluna)))
+)
+
+```
+

@@ -1,0 +1,56 @@
+---
+title: "jharbes-Dashboard-estatico"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(tidyverse)
+
+dados = diamonds
+ 
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### boxplot
+
+```{r}
+dados %>%
+  ggplot() + 
+  aes(x = color, y = table, fill = clarity) +
+  geom_boxplot()
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### histogram
+
+```{r}
+dados %>%
+  ggplot() + 
+  aes(x = price, fill = clarity) +
+  geom_histogram()
+
+```
+
+### tabela
+
+```{r}
+dados %>%
+  group_by(clarity)%>%
+  summarise(media = mean(price), mediana = median(price))%>%
+  knitr::kable()
+    
+  
+
+```
+
