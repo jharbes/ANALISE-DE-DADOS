@@ -1,0 +1,81 @@
+---
+title: "DashBoard_Dinâmico"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(plotly)
+library(tidyverse)
+library(shiny)
+
+dados = diamonds %>% 
+  select_all() %>% 
+  transmute(peso = carat,
+            qualidade = cut,
+            cor = color,
+            claridade = clarity,
+            comprimento = x,
+            largura = y,
+            profundidade = depth,
+            tabela = table,
+            preco = price)
+
+```
+
+## column {.sidebar}
+```{r}
+
+selectInput(
+  inputId = "Coluna", 
+  label= "Escolha a qualidade desejada: ", 
+  choices= unique(dados$qualidade)
+)
+
+```
+
+-----------------------------------------------------------------------
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+###
+
+```{r}
+
+renderPlotly({
+  grafico = filter(dados, qualidade == input$Coluna) %>%
+    ggplot(., aes(x=qualidade, y = peso)) + geom_boxplot(fill = "blue") +
+    labs(title="Boxplot do peso por qualidade dos diamantes",subtitle = "Análise de kilogramas", x = "Qualidade",y="Kilogramas") + theme_light()
+  ggplotly(grafico)})
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+###
+
+```{r}
+
+ggplot(dados,aes(x = peso,color=qualidade))+
+  geom_freqpoly(bins = 30,size = 2)+ labs(title = "Número de diamantes por faixa de peso e qualidade", x = "Kilogramas",y="") + theme_dark()
+```
+
+###
+
+```{r}
+
+ggplot(dados,aes(x=peso,y=preco))+
+  geom_point(color = "blue",alpha = 0.1)+
+  theme_minimal()+
+  ggtitle("Peso x Preco") + theme_classic()
+
+```
+
