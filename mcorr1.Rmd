@@ -1,0 +1,97 @@
+---
+title: "Aula 09 - ações"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+runtime: shiny
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+
+
+library(flexdashboard)
+library(tidyquant)
+library(tidyverse)
+library(corrplot)
+library(dplyr)
+library(shiny)
+library(plotly)
+
+```
+
+Column {.sidebar}
+----------------------------------------------------------------------
+```{r}
+textInput("stock1","Stock 1","PETR4.SA")
+textInput("stock2","Stock 2","TAEE11.SA")
+textInput("stock3","Stock 3","GGBR3.SA")
+textInput("stock4","Stock 4","SAPR4.SA")
+textInput("stock5","Stock 5","BDC4.SA")
+
+
+dateInput("date_i","Data Inicial","2020-01-01",format ="yyyy-mm-dd")
+dateInput("date_f", "Data Final", "2022-01-01",format ="yyyy-mm-dd")
+textOutput("stocks")
+
+
+
+```
+
+```{r}
+
+ output$selected_var = renderText({
+   
+carteira = c(input$stock1,input$stock2,input$stock3,input$stock4,input$stock5,)
+  prices = carteira %>% tq_get(get = "stock.prices", from = input$date_i, to = input$date_f)
+    
+  })
+ 
+
+
+
+
+
+
+```
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Todas as ações
+
+```{r}
+renderPlotly({
+   periodo = Sys.Date()-filter(tabela_periodo,
+                              periodo == input$periodo)$dias
+   
+   prices %>%
+     filter(date>periodo) %>%
+     ggplot()+ aes(x = date, y = adjusted, color = symbol) +
+     geom_line() +
+     labs(x = "", y = "Cotação")
+})
+
+```
+
+
+
+Column{data-width=500}
+-----------------------------------------------------------------------
+
+### Matriz de Correlações
+
+
+```{r}
+mcorr = prices %>% select(date,symbol,adjusted) %>% spread(symbol, adjusted) 
+mcorr[1]=NULL
+
+res <- cor(mcorr) # Corr matrix
+corrplot(cor(mcorr), method ='number')
+
+```
+
+
