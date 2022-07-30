@@ -1,0 +1,476 @@
+---
+title: "Projeto de Analise de Dados"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(flexdashboard)
+library(lubridate)
+library(plotly)
+library(quantmod)
+library(shiny)
+library(sidrar)
+library(stringr)
+library(tidyverse)
+library(tstools)
+library(zoo)
+
+# Desemprego - Elisabete
+
+parametros1 <- list(
+      
+      dataset_stlabour = "STLABOUR",
+      filtro_desemprego = paste0(
+        "AUS+AUT+BEL+CAN+CHL+COL+CRI+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+",
+        "JPN+KOR+LTU+LVA+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+",
+        "EA19+EU27_2020+G-7+OECD+BRA+IDN+RUS+ZAF.LRHUTTTT.STSA.M"
+        )
+)
+
+desemprego_oecd <- OECD::get_dataset(
+      dataset       = parametros1$dataset_stlabour,
+      filter        = list(parametros1$filtro_desemprego),
+      pre_formatted = TRUE
+      )
+    desemprego_oecd
+    
+dfdoecd<- desemprego_oecd%>%mutate_at(c('ObsValue'),as.numeric)
+dfdoecd= dfdoecd %>% mutate(data = ym(Time))
+
+# PIB - Fernanda
+
+
+parametros2 <- list(
+      #Referente ao banco de dados trimestral de contas nacionais da OCDE  
+      ## ### Variação do PIB a cada trimestre
+
+      dataset_qna = "QNA",
+      filtro_pib = paste0(
+        "AUS+AUT+BEL+CAN+CHL+COL+CRI+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+",
+        "JPN+KOR+LTU+LVA+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+",
+        "EA19+EU27_2020+G-7+NAFTA+OECDE+G-20+OECD+ARG+BRA+BGR+CHN+IND+IDN+ROU+RUS+SAU+",
+        "ZAF.B1_GE.GPSA.Q"
+        )
+)
+
+    pib_oecd <- OECD::get_dataset(
+      dataset       = parametros2$dataset_qna,
+      filter        = list(parametros2$filtro_pib),
+      pre_formatted = TRUE
+      )
+    pib_oecd
+    
+dfdoecd2<- pib_oecd%>%mutate_at(c('ObsValue'),as.numeric)
+dfdoecd2 = dfdoecd2 %>% mutate(data = ym(Time))
+
+# Taxa Inflacao - Lucas
+
+parametros3 <- list(
+ 
+# Main Economic Indicators - dataset com principais indicadores (código do dataset na OECD)
+dataset_mei = "MEI",
+# Taxa de Inflação (lista de países e variáveis para filtro no dataset MEI)
+filter_inflation = paste0(
+        "AUS+AUT+BEL+CAN+CHL+COL+CRI+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+",
+        "JPN+KOR+LTU+LVA+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+",
+        "EA19+EU27_2020+G4E+G-7+NAFTA+OECDE+G-20+OECD+OXE+SDR+ONM+A5M+ARG+BRA+BGR+CHN+",
+        "CYP+IND+IDN+MLT+ROU+RUS+SAU+ZAF+BRIICS.CPALTT01.GY.M"
+        )
+)
+
+df <- OECD::get_dataset(
+dataset = parametros3$dataset_mei,
+filter = list(parametros3$filter_inflation),
+pre_formatted = TRUE)
+
+dfcerto<- df%>%mutate_at(c('ObsValue'),as.numeric)
+dfcerto= dfcerto %>% mutate(data = ym(Time))
+
+dfcerto
+
+# Taxa de Juros - Rhuan
+
+dados4 <- list(
+dataset_mei = "MEI",
+filtro_taxadejuros = paste0(
+        "AUS+AUT+BEL+CAN+CHL+COL+CRI+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+",
+        "JPN+KOR+LTU+LVA+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+",
+        "EA19+EU27_2020+G4E+G-7+NAFTA+OECDE+G-20+OECD+OXE+SDR+ONM+A5M+NMEC+ARG+BRA+BGR+",
+        "CHN+CYP+IND+IDN+MLT+ROU+RUS+SAU+ZAF+BRIICS.IRSTCI01.ST.M"
+        )
+)
+
+interestoecd <- OECD::get_dataset(
+  dataset = dados4$dataset_mei,
+  filter = list(dados4$filtro_taxadejuros),
+  pre_formatted = TRUE)
+interestoecd
+
+dffinal<-interestoecd%>%mutate_at(c('ObsValue'),as.numeric)
+dffinal= dffinal %>% mutate(data = ym(Time))
+```
+
+# Desemprego
+
+## Column {.sidebar}
+
+```{r}
+selectInput(
+  inputId = "inicio1",
+  label = "Escolha o ano inicial",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "1960"
+)
+
+selectInput(
+  inputId = "fim1",
+  label = "Escolha o ano final",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "2022"
+)
+
+radioButtons(
+  inputId = "paises1",
+  label = "Escolha o País",
+  choices = c("Africa do Sul" = "ZAF",
+              "Alemanha" = "DEU",
+              "Australia" = "AUS",
+              "Austria" = "AUT",
+              "Belgica" = "BEL",
+              "Canada" = "CAN",
+              "Chile" = "CHL",
+              "Colombia" = "COL",
+              "Coreia do Sul" = "KOR",
+              "Costa Rica" = "CRI",
+              "Dinamarca" = "DNK",
+              "Eslovaquia" = "SVK",
+              "Eslovenia" = "SVN",
+              "Espanha" = "ESP",
+              "Estados Unidos" = "USA",
+              "Estonia" = "EST",
+              "Finlandia" = "FIN",
+              "Franca" = "FRA",
+              "Gra-Bretanha" = "GBR",
+              "Grecia" = "GRC",
+              "Holanda" = "NLD",
+              "Hungria" = "HUN",
+              "Indonesia" = "IDN",
+              "Irlanda" = "IRL",
+              "Islandia" = "ISL",
+              "Israel" = "ISR",
+              "Italia" = "ITA",
+              "Japao" = "JPN",
+              "Lituania" = "LTU",
+              "Luxemburgo" = "LUX",
+              "Mexico" = "MEX",
+              "Nova Zelandia" = "NZL",
+              "Noruega" = "NOR",
+              "Polonia" = "POL",
+              "Portugal" = "PRT",
+              "República Tcheca" = "CZE",
+              "Russia" = "RUS",
+              "Suecia" = "SWE",
+              "Suica" = "CHE",
+              "Turquia" = "TUR"),
+  selected = "USA"
+)
+```
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Gráfico de Linha
+
+```{r}
+renderPlotly(
+  dfdoecd %>% filter(LOCATION == input$paises1) %>% filter(format(data,"%Y") >= input$inicio1) %>% filter(format(data,"%Y") <= input$fim1) %>% ggplot() + geom_line(mapping=aes(x=data, y=ObsValue),color="#7f2f82",size=2)+theme(panel.background = element_rect(fill = "BLACK" )) + labs(title = "Desemprego", x = "Data", y = "Taxa de Desemprego")
+)
+```
+
+# PIB
+
+## Column {.sidebar}
+
+```{r}
+selectInput(
+  inputId = "inicio2",
+  label = "Escolha o ano inicial",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "1960"
+)
+
+selectInput(
+  inputId = "fim2",
+  label = "Escolha o ano final",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "2022"
+)
+
+radioButtons(
+  inputId = "paises2",
+  label = "Escolha o País",
+  choices = c("Africa do Sul" = "ZAF",
+              "Alemanha" = "DEU",
+              "Australia" = "AUS",
+              "Austria" = "AUT",
+              "Belgica" = "BEL",
+              "Brasil" = "BRA",
+              "Canada" = "CAN",
+              "Chile" = "CHL",
+              "Colombia" = "COL",
+              "Coreia do Sul" = "KOR",
+              "Costa Rica" = "CRI",
+              "Dinamarca" = "DNK",
+              "Eslovaquia" = "SVK",
+              "Eslovenia" = "SVN",
+              "Espanha" = "ESP",
+              "Estados Unidos" = "USA",
+              "Estonia" = "EST",
+              "Finlandia" = "FIN",
+              "Franca" = "FRA",
+              "Gra-Bretanha" = "GBR",
+              "Grecia" = "GRC",
+              "Holanda" = "NLD",
+              "Hungria" = "HUN",
+              "Indonesia" = "IDN",
+              "Irlanda" = "IRL",
+              "Islandia" = "ISL",
+              "Israel" = "ISR",
+              "Italia" = "ITA",
+              "Japao" = "JPN",
+              "Lituania" = "LTU",
+              "Luxemburgo" = "LUX",
+              "Mexico" = "MEX",
+              "Nova Zelandia" = "NZL",
+              "Noruega" = "NOR",
+              "Polonia" = "POL",
+              "Portugal" = "PRT",
+              "República Tcheca" = "CZE",
+              "Russia" = "RUS",
+              "Suecia" = "SWE",
+              "Suica" = "CHE",
+              "Turquia" = "TUR"),
+  selected = "USA"
+)
+```
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Gráfico de Linha
+
+```{r}
+renderPlotly(
+  dfdoecd2 %>% filter(LOCATION == input$paises2) %>% filter(format(data,"%Y") >= input$inicio2) %>% filter(format(data,"%Y") <= input$fim2) %>% ggplot() + geom_line(mapping=aes(x=data, y=ObsValue),color="RED",size=1)+theme(panel.background = element_rect(fill = "BLACK" )) + labs(title = "PIB", x = "Data", y = "Variação")
+)
+```
+
+# Taxa de Inflação
+
+## Column {.sidebar}
+
+```{r}
+selectInput(
+  inputId = "inicio3",
+  label = "Escolha o ano inicial",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "1960"
+)
+
+selectInput(
+  inputId = "fim3",
+  label = "Escolha o ano final",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "2022"
+)
+
+radioButtons(
+  inputId = "paises3",
+  label = "Escolha o País",
+  choices = c("Africa do Sul" = "ZAF",
+              "Alemanha" = "DEU",
+              "Australia" = "AUS",
+              "Austria" = "AUT",
+              "Belgica" = "BEL",
+              "Brasil" = "BRA",
+              "Canada" = "CAN",
+              "Chile" = "CHL",
+              "Colombia" = "COL",
+              "Coreia do Sul" = "KOR",
+              "Costa Rica" = "CRI",
+              "Dinamarca" = "DNK",
+              "Eslovaquia" = "SVK",
+              "Eslovenia" = "SVN",
+              "Espanha" = "ESP",
+              "Estados Unidos" = "USA",
+              "Estonia" = "EST",
+              "Finlandia" = "FIN",
+              "Franca" = "FRA",
+              "Gra-Bretanha" = "GBR",
+              "Grecia" = "GRC",
+              "Holanda" = "NLD",
+              "Hungria" = "HUN",
+              "Indonesia" = "IDN",
+              "Irlanda" = "IRL",
+              "Islandia" = "ISL",
+              "Israel" = "ISR",
+              "Italia" = "ITA",
+              "Japao" = "JPN",
+              "Lituania" = "LTU",
+              "Luxemburgo" = "LUX",
+              "Mexico" = "MEX",
+              "Nova Zelandia" = "NZL",
+              "Noruega" = "NOR",
+              "Polonia" = "POL",
+              "Portugal" = "PRT",
+              "República Tcheca" = "CZE",
+              "Russia" = "RUS",
+              "Suecia" = "SWE",
+              "Suica" = "CHE",
+              "Turquia" = "TUR"),
+  selected = "USA"
+)
+```
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Gráfico de Linha
+
+```{r}
+renderPlotly(
+  dfcerto %>% filter(LOCATION == input$paises3) %>% filter(format(data,"%Y") >= input$inicio3) %>% filter(format(data,"%Y") <= input$fim3) %>% ggplot() + geom_line(mapping=aes(x=data, y=ObsValue),color="blue",size=1)+theme(panel.background = element_rect(fill = "black" )) + labs(title = "Inflação", x = "Data", y = "Taxa de Inflação")
+)
+```
+
+# Taxa de Juros
+
+## Column {.sidebar}
+
+```{r}
+selectInput(
+  inputId = "inicio4",
+  label = "Escolha o ano inicial",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "1960"
+)
+
+selectInput(
+  inputId = "fim4",
+  label = "Escolha o ano final",
+  choices = c("1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968",
+              "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977",
+              "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986",
+              "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995",
+              "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004",
+              "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013",
+              "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"),
+  selected = "2022"
+)
+
+radioButtons(
+  inputId = "paises4",
+  label = "Escolha o País",
+  choices = c("Africa do Sul" = "ZAF",
+              "Alemanha" = "DEU",
+              "Australia" = "AUS",
+              "Austria" = "AUT",
+              "Belgica" = "BEL",
+              "Brasil" = "BRA",
+              "Canada" = "CAN",
+              "Chile" = "CHL",
+              "Colombia" = "COL",
+              "Coreia do Sul" = "KOR",
+              "Costa Rica" = "CRI",
+              "Dinamarca" = "DNK",
+              "Eslovaquia" = "SVK",
+              "Eslovenia" = "SVN",
+              "Espanha" = "ESP",
+              "Estados Unidos" = "USA",
+              "Estonia" = "EST",
+              "Finlandia" = "FIN",
+              "Franca" = "FRA",
+              "Gra-Bretanha" = "GBR",
+              "Grecia" = "GRC",
+              "Holanda" = "NLD",
+              "Hungria" = "HUN",
+              "Indonesia" = "IDN",
+              "Irlanda" = "IRL",
+              "Islandia" = "ISL",
+              "Israel" = "ISR",
+              "Italia" = "ITA",
+              "Japao" = "JPN",
+              "Lituania" = "LTU",
+              "Luxemburgo" = "LUX",
+              "Mexico" = "MEX",
+              "Nova Zelandia" = "NZL",
+              "Noruega" = "NOR",
+              "Polonia" = "POL",
+              "Portugal" = "PRT",
+              "República Tcheca" = "CZE",
+              "Russia" = "RUS",
+              "Suecia" = "SWE",
+              "Suica" = "CHE",
+              "Turquia" = "TUR"),
+  selected = "USA"
+)
+```
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Gráfico de Linha
+
+```{r}
+renderPlotly(
+dffinal %>% filter(LOCATION == input$paises4) %>% filter(format(data,"%Y") >= input$inicio4) %>% filter(format(data,"%Y") <= input$fim4) %>% ggplot() + geom_line(mapping=aes(x=data, y=ObsValue),color = "green",size=1)+theme(panel.background = element_rect(fill = "black")) + labs(title = "Juros", x = "Data", y = "Taxa de Juros")
+)
+```
+
