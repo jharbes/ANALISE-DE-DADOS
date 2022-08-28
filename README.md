@@ -1,3 +1,5 @@
+<img src="icone-linguagem-r.png" align="right" width="150">
+
 # ANALISE-DE-DADOS
 
 Disciplina Análise de Dados com utilização de linguagem R - Sistemas de Informação - Cefet/RJ
